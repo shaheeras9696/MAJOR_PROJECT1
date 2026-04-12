@@ -18,10 +18,22 @@ module.exports.createReview = async(req, res)=>{
 
 // Routes --- Delete Reviews
 module.exports.destroyReview = async (req,res)=>{
-    let{id, reviewId} = req.params;
+    let {id, reviewId} = req.params;
 
-    await Listing.findByIdAndUpdate(id, {$pull: {reviews : reviewId}});// $pull - Mongoose special operator to remove an existing array
+    let review = await Review.findById(reviewId);
+
+    // Only owner can delete
+    if(!review.author.equals(req.user._id)){
+        req.flash("error", "You are not authorized!");
+        return res.redirect(`/listings/${id}`);
+    }
+
+    await Listing.findByIdAndUpdate(id, {
+        $pull: {reviews: reviewId}
+    });
+
     await Review.findByIdAndDelete(reviewId);
-     req.flash("success"," Review Deleted!");
+
+    req.flash("success","Review Deleted!");
     res.redirect(`/listings/${id}`);
 };
